@@ -1,3 +1,5 @@
+import datetime
+import pandas as pd
 import pymysql as myconn
 # import mysql.connector as myconn
  
@@ -11,7 +13,7 @@ cur=db.cursor()
 class BANK():
 
     def __init__(self,bank_name):
-        import datetime
+        
         self.bank_name=bank_name
         self.username=""
         self.password=""
@@ -29,7 +31,10 @@ class BANK():
         self.x=datetime.datetime.now()
         self.curr_date=self.x.strftime("%Y-%m-%d")
         self.c_id=0
-        
+        self.df=pd.DataFrame()
+        self.df2=pd.DataFrame()
+        self.df3=pd.DataFrame()
+        self.tablecolumns=["c_id","fname","mname","lname","phoneno","aadhaarno","date","username","password","balance"]
 
 
     def welcome_user(self):
@@ -58,7 +63,6 @@ class BANK():
         db.commit()
         self.id=f'select c_id from customer_info where fname="{self.fname}"'
         cur.execute(self.id)
-        #db.commit()
         self.result=cur.fetchall()
         for i in self.result:
             self.cid=(i[0])
@@ -266,7 +270,6 @@ class BANK():
                 self.change_password()
             elif self.choice==6:
                 self.exit()
-
             else:
                 print("INVALID CHOICE")
 
@@ -318,13 +321,8 @@ class BANK():
         records_query=f'select * from {self.tablename}'
         cur.execute(records_query)
         transac_records=cur.fetchall()
-        print("-----------------------------------------------------------")
-        print("Sr.No.","      ","Date","        ","Transaction","         ","Amount")
-        print("-----------------------------------------------------------")
-        for i in transac_records:
-            print("------------------------------------------------------------")
-            print(i[0],"        ",i[1],"        ",i[2],"        ",i[3])
-            print("------------------------------------------------------------")
+        self.df=pd.DataFrame(transac_records,columns=["Sr.No.","Date","Transaction","Amount"])
+        print(self.df)
         self.check_balance()
 
     def exit(self):
@@ -368,7 +366,7 @@ class BANK():
         self.list2=[]
         admin_list=f'select ad_username from admin_info'
         cur.execute(admin_list)
-        #db.commit()
+
         list2=cur.fetchall()
         for i in list2:
             self.list2.append(i[0])
@@ -386,7 +384,7 @@ class BANK():
         self.list3=[]
         admin_ps_list=f'select ad_passkey from admin_info'
         cur.execute(admin_ps_list)
-        #db.commit()
+
         list3=cur.fetchall()
         for i in list3:
             self.list3.append(i[0])
@@ -434,7 +432,7 @@ class BANK():
         c_ids=cur.fetchall()
         for i in c_ids:
             self.c_ids_list.append(i[0])
-        #print(self.c_ids_list)
+
         print("CUSTOMER DETAILS")
         self.c_id=input("ENTER CUSTOMER ID : ")
         if self.c_id.isdigit():
@@ -443,21 +441,11 @@ class BANK():
                 one_customer=f'select * from customer_info where c_id={self.c_id}'
                 cur.execute(one_customer)
                 self.records=cur.fetchall()
+		self.df2=pd.DataFrame(self.records,columns=self.tablecolumns)
                 print('''
                 --------------------------
                     CUSTOMER DETAILS
                 --------------------------''')
-                for i in self.records:
-                    print(f'''
-                        CUSTOMER ID : {i[0]}
-                        FULL NAME : {i[1]} {i[2]} {i[3]}
-                        PHONE NO. : {i[4]}
-                        AADHAAR NO. : {i[5]}
-                        DATE (ACCOUNT CREATION): {i[6]}
-                        USERNAME : {i[7]}
-                        PASSWORD : {i[8]}
-                        BALANCE : {i[9]}
-                        ''')
                     
                 transac_also=input("DO YOU WANT TO SEE TRANSACTION HISTORY AS WELL ? \nYES (Y) OR NO (N) ")
                 transac_also=transac_also.lower()
@@ -472,11 +460,12 @@ class BANK():
                     transac_hist_query=f'select * from {tablename}'
                     cur.execute(transac_hist_query)
                     transac_hist=cur.fetchall()
+        	    self.df=pd.DataFrame(transac_hist,columns=["Sr.No.","Date","Transaction","Amount"])
                     if len(transac_hist)==0:
                         print("NO TRANSACTIONS YET")
                     else:
-                        for i in transac_hist:
-                            print(i[0],i[1],i[2],i[3])
+                    	print(self.df)
+                        print("---------------------------------------------")
             else:
                 print("ID NOT FOUND")
                 self.update_cust_details()
@@ -641,6 +630,14 @@ class BANK():
         ----------------------------
         ''')
         self.process()
+
+    def all_cust_records(self):
+        all_cust_query='select * from customer_info'
+        cur.execute(all_cust_query)
+        all_cust=cur.fetchall()
+        self.tablecolumns=["c_id","fname","mname","lname","phoneno","aadhaarno","date","username","password","balance"]
+        df3=pd.DataFrame(all_cust,columns=self.tablecolumns)
+        df3.to_excel('HDFC BANK CUSTOMER INFO.xlsx',index=False)
 
     def exit_adminoptions_(self):
         self.admin_options()
