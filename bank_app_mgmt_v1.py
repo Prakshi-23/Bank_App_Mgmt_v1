@@ -1,6 +1,6 @@
-
-import mysql.connector as myconn
-
+import pymysql as myconn
+# import mysql.connector as myconn
+ 
 db=myconn.connect(host="localhost",
                   user="root",
                   password="root",
@@ -101,9 +101,6 @@ class BANK():
             print("NO DIGITS OR SPECIAL CHARACTERS ALLOWED")
             self.update_lname()
 
-
-        
-
     def update_phoneno(self):
         self.phoneno=input("ENTER PHONE NO. : ")
         updatephone_query=f'update customer_info set phoneno="{self.phoneno}" where c_id={self.cid}'
@@ -187,7 +184,7 @@ class BANK():
             self.records=cur.fetchall()
             for i in self.records:
                 self.cust_list.append(i[0])
-            print(self.cust_list)
+            #print(self.cust_list)
             print('''
             -----------------------
                     LOGIN 
