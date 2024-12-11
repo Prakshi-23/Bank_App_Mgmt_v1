@@ -466,6 +466,8 @@ class BANK():
                     else:
                     	print(self.df)
                         print("---------------------------------------------")
+		elif transac_also=='n':
+                    pass
             else:
                 print("ID NOT FOUND")
                 self.update_cust_details()
