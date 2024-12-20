@@ -36,11 +36,20 @@ class BankingAppGUI(ctk.CTk):
         self.ids_list=[]
         self.current_user=""
         self.df3=pd.DataFrame()
+        self.valid_fname=""
+        self.valid_mname=""
+        self.valid_lname=""
+        self.valid_phoneno=""
+        self.valid_aadhaar=""
+        self.valid_username=""
+        self.valid_password=""
+        self.tablename=""
+        self.c_id=0
 
         self.show_main_menu()
         self.all_customers()
 
-    #MAIN MENU 
+    # MAIN MENU PAGE
     def show_main_menu(self):
         self.clear_frame()
 
@@ -56,10 +65,12 @@ class BankingAppGUI(ctk.CTk):
         admin_login_btn = ctk.CTkButton(self, text="Admin Login", command=self.show_admin_login)
         admin_login_btn.pack(pady=10)
 
+    # CLEAR CONTENTS IN PAGE
     def clear_frame(self):
         for widget in self.winfo_children():
             widget.destroy()
 
+    # SIGNUP FORM PAGE
     def show_signup_form(self):
         self.clear_frame()
 
@@ -106,29 +117,33 @@ class BankingAppGUI(ctk.CTk):
         self.confirm_password_entry = ctk.CTkEntry(self, placeholder_text=" ")
         self.confirm_password_entry.pack(pady=5)
 
-        signup_btn = ctk.CTkButton(self, text="Create Account", command=self.signup)
+        signup_btn = ctk.CTkButton(self, text="Submit Info", command=self.submit_info )
         signup_btn.pack(pady=10)
 
         back_btn = ctk.CTkButton(self, text="Back", command=self.show_main_menu)
         back_btn.pack(pady=5)
 
-    def signup(self):
-        fname = self.fname_entry.get()
-        mname = self.mname_entry.get()
-        lname = self.lname_entry.get()
-        phoneno = self.phoneno_entry.get()
-        aadhaarno = self.aadhaarno_entry.get()
-        username = self.username_entry.get()
-        password = self.password_entry.get()
+    # SUBMIT ALL THE DETAILS - CHECKS ALL THE FIELDS IF VALID
+    def submit_info(self):
+        self.fname = self.fname_entry.get()
+        self.mname = self.mname_entry.get()
+        self.lname = self.lname_entry.get()
+        self.phoneno = self.phoneno_entry.get()
+        self.aadhaarno = self.aadhaarno_entry.get()
+        self.username = self.username_entry.get()
+        self.password = self.password_entry.get()
         confirm_password = self.confirm_password_entry.get()
 
-        if not all([fname, mname, lname, phoneno, aadhaarno, username, password, confirm_password]):
+        # checks if all fields are filled or not
+        if not all([self.fname, self.mname, self.lname, self.phoneno, self.aadhaarno, self.username, self.password, confirm_password]):
             messagebox.showerror("Error", "All fields are required!")
             return
         
         try:
             db=get_db_connection()
             cur=db.cursor()
+
+            # fetches all usernames 
             unames_query='select username from customer_info'
             cur.execute(unames_query)
             unames_list=[]
@@ -136,107 +151,116 @@ class BankingAppGUI(ctk.CTk):
             for i in unames:
                 unames_list.append(i[0])
 
-            if not fname.isalpha():
+            # first_name validation
+            if not self.fname.isalpha():
                 messagebox.showerror("Error", "First Name: No Digits or Special Charaters Allowed!")
                 return
             else:
-                fname=fname.title()
+                self.valid_fname=self.fname.title()
 
-            if not mname.isalpha():
+            # middle_name validation
+            if not self.mname.isalpha():
                 messagebox.showerror("Error", "Middle Name: No Digits or Special Charaters Allowed!")
                 return
             else:
-                mname=mname.title()
+                self.valid_mname=self.mname.title()
 
-            if not lname.isalpha():
+            # last_name validation
+            if not self.lname.isalpha():
                 messagebox.showerror("Error", "Last Name: No Digits or Special Charaters Allowed!")
                 return
             else:
-                lname=lname.title()    
+                self.valid_lname=self.lname.title()    
 
-            if str(username) not in unames_list:
-                if not ((len(username)>=4 and len(username)<=10 )and username.isalpha()):
+            # username validation
+            if str(self.username) not in unames_list:
+                if not ((len(self.username)>=4 and len(self.username)<=10 )and self.username.isalpha()):
                     messagebox.showerror("Error", "Username must be of 4-10 alphabets !")
                     return
                 else:
-                    username = username.lower()
+                    self.valid_username = self.username.lower()
+                    self.tablename=self.valid_username
             else:
                 messagebox.showerror("Error","An error occurred: Username exists already ! \nTry a new one !! ")
 
-            if fname and mname and lname and username:
-                query = "insert into customer_info (fname, mname, lname, date, username, balance) VALUES (%s, %s, %s, %s, %s, %s)"
-                cur.execute(query, (fname, mname, lname,{self.curr_date}, username,0))
-                tablename=username
-
-                id=f'select c_id from customer_info where username="{username}"'
-                cur.execute(id)
-                c_id=cur.fetchall()
-                for i in c_id:
-                    c_id=i[0]
-            else:
-                messagebox.showerror("Error","Check info again !! ")
-            
-
-            if not (len(phoneno)==10 and phoneno.isdigit()):
+            # phone no. validation
+            if not (len(self.phoneno)==10 and self.phoneno.isdigit()):
                 messagebox.showerror("Error", "Phone No. must be of 10 digits!")
                 return
             else:
-                set_phone=f'update customer_info set phoneno="{phoneno}" where c_id={c_id}'
-                cur.execute(set_phone)
-                db.commit()
+                self.valid_phoneno=self.phoneno
 
-            if not (len(aadhaarno)==12 and aadhaarno.isdigit()):
+            # aadhaar no. validation
+            if not (len(self.aadhaarno)==12 and self.aadhaarno.isdigit()):
                 messagebox.showerror("Error", "Aadhaar No. must be of 12 digits!")
                 return
             else:
-                set_aadhaar=f'update customer_info set aadhaarno="{aadhaarno}" where c_id={c_id}'
-                cur.execute(set_aadhaar)
-                db.commit()
+                self.valid_aadhaar=self.aadhaarno
 
-            if (len(password)==4 and password.isdigit()):
-                if password != confirm_password:
+            # password validation
+            if (len(self.password)==4 and self.password.isdigit()):
+                if self.password != confirm_password:
                     messagebox.showerror("Error", "Check Password Again!")
                     return
-
                 else:
-                    set_ps=f'update customer_info set password="{password}" where c_id={c_id}'
-                    cur.execute(set_ps)
-                    db.commit()
+                    self.valid_password=self.password
             else:
                 messagebox.showerror("Error", "Password must be of 4 digits!")
                 return
+            
+            # if all fields are valid then only show the create account option
+            if self.valid_fname and self.valid_mname and self.valid_lname and self.valid_phoneno and self.valid_aadhaar and self.valid_username and self.valid_password:
+                create_btn = ctk.CTkButton(self, text="Create Account", command=self.create_account )
+                create_btn.pack(pady=20)
 
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred: {e}")
         finally:
             db.close()
 
-        try:
-            db=get_db_connection()
-            cur=db.cursor()
+    # CREATES ACCOUNT - ADD DETAILS IN CUSTOMER INFO AND CREATES TABLE  (SIGNUP ACTION)
+    def create_account(self):
+        if self.valid_fname and self.valid_mname and self.valid_lname and self.valid_phoneno and self.valid_aadhaar and self.valid_username and self.valid_password:
+            try:
+                db=get_db_connection()
+                cur=db.cursor()
 
-            messagebox.showinfo("Success", f'''Account created successfully!
-            FULL NAME : {fname} {mname} {lname}
-            CUSTOMER ID : {c_id}
-            PHONE NO. : {phoneno}
-            AADHAAR NO. : {aadhaarno}
-            USERNAME : {username}
-                                ''')
-            create_table_query=f'create table {tablename} (`Sr_No` int primary key auto_increment,`Date` date, `Transaction` varchar(10), `Amount` int)'
-            cur.execute(create_table_query)
-            db.commit()
-            self.show_main_menu()
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {e}")
-        finally:
-            db.close()
+                # insert query inserts records in customer info
+                query = "insert into customer_info (fname, mname, lname, phoneno, aadhaarno, date, username, password, balance) VALUES (%s, %s, %s, %s, %s, %s,%s, %s, %s)"
+                cur.execute(query, (self.valid_fname, self.valid_mname, self.valid_lname, self.valid_phoneno, self.valid_aadhaar, {self.curr_date}, self.valid_username, self.valid_password,0))
 
+                # to fetch customer id 
+                id=f'select c_id from customer_info where username="{self.username}"'
+                cur.execute(id)
+                c_id=cur.fetchall()
+                for i in c_id:
+                    self.c_id=i[0]
 
+                # message displays after the account is created
+                messagebox.showinfo("Success", f'''Account created successfully!
+                FULL NAME : {self.valid_fname} {self.valid_mname} {self.valid_lname}
+                CUSTOMER ID : {self.c_id}
+                PHONE NO. : {self.valid_phoneno}
+                AADHAAR NO. : {self.valid_aadhaar}
+                USERNAME : {self.valid_username}
+                                    ''')
+                # new table on username is created
+                create_table_query=f'create table {self.tablename} (`Sr_No` int primary key auto_increment,`Date` date, `Transaction` varchar(10), `Amount` int)'
+                cur.execute(create_table_query)
+                db.commit()
+                self.show_main_menu()
+            except Exception as e:
+                messagebox.showerror("Error", f"An error occurred: {e}")
+            finally:
+                db.close()
+
+    # SIGNIN ACTION
     def signin(self):
         username = self.login_username_entry.get()
         self.current_user = username.lower()
         password = self.login_password_entry.get()
 
+        # checks if all fields are filled or not
         if not all([username, password]):
             messagebox.showerror("Error", "All fields are required!")
             return
@@ -244,35 +268,44 @@ class BankingAppGUI(ctk.CTk):
         try:
             db=get_db_connection()
             cur=db.cursor()
+
+            # fetches all usernames 
             cur.execute(self.unames_query)
             unames=cur.fetchall()
             for i in unames:
                 self.unames_list.append(i[0])
+            
+            # checks if username exists 
             if str(self.current_user) in self.unames_list:
                 get_ps=f'select password from customer_info where username="{self.current_user}"'
+
+                # if username exists then it fetches its password
                 cur.execute(get_ps)
                 ps=cur.fetchall()
                 for i in ps:
                     ps=i[0]
+
+                # fetches first name of user
                 fname=f'select fname from customer_info where username="{self.current_user}" '
                 cur.execute(fname)
                 fname=cur.fetchall()
                 for i in fname:
                     fname=i[0]
+
+                # if user enter correct password 
                 if password==ps:
                     messagebox.showinfo("Success", f"Welcome back, {fname}!")
                     self.show_after_login_options()
                 else:
                     messagebox.showerror("Error", "Invalid Password !")
-
             else:
                 messagebox.showerror("Error", "Invalid username !")
-                    
         except Exception as e:
             messagebox.showerror("Error",f"An error occurred: {e} !! ")
         finally:
             db.close()
 
+    # SIGNIN ACTION
     def show_signin_form(self):
         self.clear_frame()
 
@@ -291,18 +324,14 @@ class BankingAppGUI(ctk.CTk):
         back_btn = ctk.CTkButton(self, text="Back", command=self.show_main_menu)
         back_btn.pack(pady=5)
 
-    def c_ids(self):
-        cur.execute(self.ids_list)
-        cids=cur.fetchall()
-        for i in cids:
-            self.ids_list.append(i)
-
+    # AFTER LOGIN OPTION PAGE
     def show_after_login_options(self):
         self.clear_frame()
         
         db=get_db_connection()
         cur=db.cursor()
 
+        # fetches first name of admin
         get_fname=f'select fname from customer_info where username="{self.current_user}"'
         cur.execute(get_fname)
         fname=cur.fetchone()[0]
@@ -328,6 +357,7 @@ class BankingAppGUI(ctk.CTk):
         exit_btn = ctk.CTkButton(self, text="Log Out", command=self.logout)
         exit_btn.pack(pady=10)
 
+    # DEPOSIT PAGE
     def show_deposit_form(self):
         self.clear_frame()
 
@@ -343,6 +373,7 @@ class BankingAppGUI(ctk.CTk):
         back_btn = ctk.CTkButton(self, text="Back", command=self.show_after_login_options)
         back_btn.pack(pady=5)
 
+    # WITHDRAW PAGE
     def show_withdraw_form(self):
         self.clear_frame()
 
@@ -358,11 +389,13 @@ class BankingAppGUI(ctk.CTk):
         back_btn = ctk.CTkButton(self, text="Back", command=self.show_after_login_options)
         back_btn.pack(pady=5)
 
+    # CHECK BALANCE ACTION
     def check_balance(self):
         try:
             db = get_db_connection()
             cur = db.cursor()
 
+            # fetches the balance of the user
             query = f'SELECT balance FROM customer_info WHERE username ="{self.current_user}"'
             cur.execute(query)
             balance = cur.fetchone()[0]
@@ -373,6 +406,7 @@ class BankingAppGUI(ctk.CTk):
         finally:
             db.close()
 
+    # CHANGE PASSWORD PAGE
     def show_change_password_form(self):
         self.clear_frame()
 
@@ -391,10 +425,12 @@ class BankingAppGUI(ctk.CTk):
         back_btn = ctk.CTkButton(self, text="Back", command=self.show_after_login_options)
         back_btn.pack(pady=5)
 
+    # CHANGE PASSWORD ACTION
     def change_password(self):
         current_password = self.current_password_entry.get()
         new_password = self.new_password_entry.get()
 
+        # checks if all fields are filled
         if not all([current_password, new_password]):
             messagebox.showerror("Error", "All fields are required!")
             return
@@ -403,10 +439,15 @@ class BankingAppGUI(ctk.CTk):
             db = get_db_connection()
             cur = db.cursor()
 
+            # fetches the current password 
             query = f'SELECT password FROM customer_info WHERE username = "{self.current_user}"'
             cur.execute(query)
             stored_password = cur.fetchone()[0]
+
+            # checks if the entered password is correct
             if stored_password==current_password:
+
+                # new password validation
                 if len(new_password)==4 and new_password.isdigit():
                     update_query = f'UPDATE customer_info SET password ="{new_password}"  WHERE username = "{self.current_user}"'
                     cur.execute(update_query)
@@ -420,15 +461,18 @@ class BankingAppGUI(ctk.CTk):
         finally:
             db.close()
 
+    # TRANSACTION REPORT ACTION
     def transaction_report(self):
         try:
             db = get_db_connection()
             cur = db.cursor()
 
+            # fetches user information
             info_query=f'select c_id,fname,mname,lname,balance from customer_info where username="{self.current_user}"'
             cur.execute(info_query)
             info = cur.fetchone()
 
+            # fetches all transaction records stored in user's table
             query = f'SELECT * FROM {self.current_user}'
             cur.execute(query)
             transactions = cur.fetchall()
@@ -441,8 +485,7 @@ class BankingAppGUI(ctk.CTk):
             file_path = filedialog.asksaveasfilename(
                 defaultextension=".pdf",
                 filetypes=[("PDF files", "*.pdf")],
-                title="Save Transaction Report"
-            )
+                title="Save Transaction Report")
 
             if not file_path:
                 return  # User canceled the save dialog
@@ -456,18 +499,22 @@ class BankingAppGUI(ctk.CTk):
         finally:
             db.close()
 
+    # CONTENT INSIDE PDF
     def generate_pdf(self, info, transactions, file_path):
         try:
+            # fetches firstname of user
             get_fname=f'select fname from customer_info where username="{self.current_user}"'
             cur.execute(get_fname)
             fname_=cur.fetchone()[0]
 
+            # pdf page
             c = canvas.Canvas(file_path, pagesize=letter)
             width, height = letter
 
             c.setFont("Helvetica-Bold", 14)
             c.drawString(50, height - 50, f"Transaction Report for {fname_}")
 
+            # info at top of pdf
             c.setFont("Helvetica", 12)
             y = height - 80
             customer_details = [
@@ -513,7 +560,7 @@ class BankingAppGUI(ctk.CTk):
         except Exception as e:
             messagebox.showerror("Error", f"Failed to generate PDF: {e}")
 
-
+    # DEPOSIT ACTION
     def deposit(self):
         amount = self.deposit_entry.get()
         if not amount.isdigit():
@@ -524,9 +571,11 @@ class BankingAppGUI(ctk.CTk):
             db = get_db_connection()
             cur = db.cursor()
 
+            # updates the balance amount after deposit
             query = f'UPDATE customer_info SET balance = balance +{amount} WHERE username = "{self.current_user}"'
             cur.execute(query)
 
+            # inserts withdrawal transaction record in user's table
             trans_query = f'INSERT INTO {self.current_user} (Date, Transaction, Amount) VALUES ("{self.curr_date}","Deposit",{amount})'
             cur.execute(trans_query)
 
@@ -538,6 +587,7 @@ class BankingAppGUI(ctk.CTk):
         finally:
             db.close()
 
+    # WITHDRAW ACTION
     def withdraw(self):
         amount = self.withdraw_entry.get()
         if not amount.isdigit():
@@ -552,13 +602,16 @@ class BankingAppGUI(ctk.CTk):
             cur.execute(query)
             balance = cur.fetchone()[0]
 
+            # insufficient balance for withdrawal
             if int(amount) > balance:
                 messagebox.showerror("Error", "Insufficient balance!")
                 return
 
+            # updates the balance amount after withdrawal
             update_query = f'UPDATE customer_info SET balance = balance-{amount} WHERE username = "{self.current_user}" '
             cur.execute(update_query)
 
+            # inserts withdrawal transaction record in user's table
             trans_query = f'INSERT INTO {self.current_user} (Date, Transaction, Amount) VALUES ("{self.curr_date}","Deposit",{amount})'
             cur.execute(trans_query)
 
@@ -570,6 +623,7 @@ class BankingAppGUI(ctk.CTk):
         finally:
             db.close()
 
+    # ADMIN LOGIN PAGE
     def show_admin_login(self):
         self.clear_frame()
 
@@ -588,7 +642,7 @@ class BankingAppGUI(ctk.CTk):
         back_btn = ctk.CTkButton(self, text="Back", command=self.show_main_menu)
         back_btn.pack(pady=5)
 
-
+    # ADMIN OPTIONS PAGE
     def show_admin_options(self):
         self.clear_frame()
 
@@ -611,6 +665,7 @@ class BankingAppGUI(ctk.CTk):
         logout_btn = ctk.CTkButton(self, text="Log Out", command=self.logout_admin)
         logout_btn.pack(pady=10)
 
+    # CLOSE ACCOUNT FORM PAGE
     def show_close_account_form(self):
         self.clear_frame()
 
@@ -629,6 +684,7 @@ class BankingAppGUI(ctk.CTk):
         back_btn = ctk.CTkButton(self, text="Back", command=self.show_admin_options)
         back_btn.pack(pady=5)
 
+    # ADMIN LOGIN ACTION
     def admin_login(self):
         ad_username = self.admin_username_entry.get()
         ad_password = self.admin_password_entry.get()
@@ -669,6 +725,7 @@ class BankingAppGUI(ctk.CTk):
         finally:
             db.close()
 
+    # VIEW CUSTOMER INFO PAGE
     def view_customers(self):
         self.clear_frame()
 
@@ -684,9 +741,9 @@ class BankingAppGUI(ctk.CTk):
         back_btn = ctk.CTkButton(self, text="Back", command=self.show_admin_options)
         back_btn.pack(pady=5)
 
+    # SEE INFO ACTION
     def see_info(self):
         customer_id=self.customer_id_entry.get()
-
         
         try:
             db = get_db_connection()
@@ -720,6 +777,7 @@ class BankingAppGUI(ctk.CTk):
         finally:
             db.close()
 
+    # CLOSE ACCOUNT ACTION
     def close_account(self):
         customer_id = self.customer_id_entry.get()
 
@@ -762,6 +820,7 @@ class BankingAppGUI(ctk.CTk):
         finally:
             db.close()
 
+    # UPDATE CUSTOMER FORM PAGE
     def show_update_customer_form(self):
         self.clear_frame()
 
@@ -784,6 +843,7 @@ class BankingAppGUI(ctk.CTk):
         back_btn = ctk.CTkButton(self, text="Back", command=self.show_admin_options)
         back_btn.pack(pady=5)
 
+    # UPDATE CUSTOMER INFO ACTION
     def update_customer_info(self):
         customer_id = self.customer_id_entry.get()
         field = self.field_selector.get()
@@ -796,9 +856,13 @@ class BankingAppGUI(ctk.CTk):
         try:
             db = get_db_connection()
             cur = db.cursor()
+
+            # checks customer id
             if not customer_id.isdigit():
                 messagebox.showerror("Error", "Please enter a valid customer ID!")
                 return
+            
+            # Name validation
             if field=="fname" or field=="mname" or field=="lname":
                 if new_value.isalpha():
                     update_info=f'update customer_info set {field} = "{new_value.title()}" where c_id={customer_id}'
@@ -809,6 +873,7 @@ class BankingAppGUI(ctk.CTk):
                 else:
                     messagebox.showerror("Error",f"Check {field} again \nNo digits or special characters allowed")
 
+            # phone no validation
             elif field=="phoneno":
                 if new_value.isdigit() and len(new_value)==10:
                     update_info=f'update customer_info set {field} = "{new_value}" where c_id={customer_id}'
@@ -818,18 +883,25 @@ class BankingAppGUI(ctk.CTk):
                 else:
                     messagebox.showerror("Error",f"Check {field} again Phone No. must be of 10 digits\nNo alphabets or special characters allowed")
 
+            # username validation
             elif field=="username":
                 old_uname=f'select username from customer_info where c_id={customer_id}'
                 cur.execute(old_uname)
                 old_customer_uname=cur.fetchone()[0]
 
+                # rename user's table
                 tablename=old_customer_uname
                 cur.execute(self.unames_query)
                 unames=cur.fetchall()
                 for i in unames:
                     self.unames_list.append(i[0])
+
                 # messagebox.showinfo("usernames",f"{self.unames_list}")
+
+                # checks if new username doesn't exists already
                 if str(new_value) not in self.unames_list:
+
+                    # new username validation
                     if new_value.isalpha() and (len(new_value)>=4 and len(new_value)<=10):
                         update=f'update customer_info set username="{new_value}" where c_id={customer_id}'
                         
@@ -848,14 +920,17 @@ class BankingAppGUI(ctk.CTk):
         finally:
             db.close()
 
+    # LOGOUT ADMIN ACTION
     def logout_admin(self):
         self.current_admin = None
         self.show_main_menu()
 
+    # LOGOUT USER ACTION
     def logout(self):
         self.current_user = None
         self.show_main_menu()
 
+    # STORE ALL CUSTOMER DATA IN EXCEL FILE
     def all_customers(self):
         all='select * from customer_info'
         cur.execute(all)
